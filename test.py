@@ -11,7 +11,7 @@ def parse_args():
         type=str,
         help='read file path',
         nargs='?',
-        default='log.txt'
+        default='file.log'
     )
     return parser.parse_args()
 
@@ -21,7 +21,7 @@ async def read_file_by_line(log_file):
         data = log_file.readline().strip()
         if data:
             return data
-        await asyncio.sleep(0.5)
+        await asyncio.sleep(0.1)
 
 
 async def read_array(array, tab_count):
@@ -31,34 +31,38 @@ async def read_array(array, tab_count):
             tab_count += 1
             await read_array(item, tab_count)
             tab_count -= 1
+        elif isinstance(item, (int, float)):
+            print('\t' * tab_count + 'Число - {digit}'.format(digit=item))
         else:
-            if isinstance(item, (int, float)):
-                print('\t' * tab_count + 'Число - {digit}'.format(digit=item))
-            elif isinstance(item, str):
-                print(
-                    '\t' * tab_count + 'Строка - {string}'.format(string=item)
-                )
-    await asyncio.sleep(0.1)
+            print('\t' * tab_count + 'Строка - {string}'.format(string=item))
+        await asyncio.sleep(0.1)
 
 
-async def find(file_path):
-    with open(file_path, 'r') as log_file:
+async def read_file(path):
+    with open(path, 'r', encoding='utf-8') as log_file:
+        log_file.seek(0, 2)
         while True:
             line = await read_file_by_line(log_file)
-            line = ast.literal_eval(line)
-            if isinstance(line, (int, float)):
-                print('Число - {digit}'.format(digit=line))
-            elif isinstance(line, str):
-                print('Строка - {string}'.format(string=line.strip()))
-            elif isinstance(line, (list, tuple)):
-                print('Массив')
+            try:
+                array = ast.literal_eval(line)
+            except ValueError:
+                array = None
+            # except SyntaxError:
+            #     array = None
+            if isinstance(array, (list, tuple)):
                 tab_count = 1
-                await read_array(line, tab_count)
+                print('Массив')
+                await read_array(array, tab_count)
+            elif isinstance(line, (int, float)):
+                print('Число {digit}'.format(digit=line))
+            else:
+                print('Строка {string}'.format(string=line))
+            await  asyncio.sleep(0.1)
 
 
 if __name__ == '__main__':
     args = parse_args()
-    log_file_path = args.file_path
+    file_path = args.file_path
     config = configparser.ConfigParser()
     config.read('config.ini')
     try:
@@ -66,4 +70,4 @@ if __name__ == '__main__':
     except KeyError:
         pass
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(find(log_file_path))
+    loop.run_until_complete(read_file(file_path))
