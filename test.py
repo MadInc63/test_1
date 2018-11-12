@@ -53,11 +53,13 @@ async def read_array(array, tab_count):
 
 
 async def async_handler(file):
-    with open(file, 'r') as log_file:
+    with open(file, 'r', encoding='utf-8') as log_file:
         for line in log_file:
             line = line.strip()
-            with suppress(ValueError, SyntaxError):
+            try:
                 array = ast.literal_eval(line)
+            except (ValueError, SyntaxError):
+                array = None
             if isinstance(array, (list, tuple)):
                 tab_count = 1
                 print('Массив')
